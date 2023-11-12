@@ -325,3 +325,186 @@ const PORT = 3000;
 server.listen(PORT, () => {
     console.log(`Listening on port ${PORT}`);
 });
+
+
+------------------
+------------------
+
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+
+class QuizServer {
+  constructor() {
+    this.app = express();
+    this.server = http.createServer(this.app);
+    this.io = new Server(this.server);
+    this.idUserMap = {};
+    this.roomQuestionMap = {};
+    this.roomTimerMap = {};
+    this.correctAnswer = {};
+    this.responsesTable = {};
+
+    this.setupSocket();
+  }
+
+  setupSocket() {
+    this.io.on('connection', (socket) => {
+      const quizSocket = new QuizSocket(socket, this);
+      quizSocket.setupListeners();
+    });
+  }
+
+  startServer(port = 3000) {
+    this.server.listen(port, () => {
+      console.log(`Listening on port ${port}`);
+    });
+  }
+}
+
+class QuizSocket {
+  constructor(socket, quizServer) {
+    this.socket = socket;
+    this.quizServer = quizServer;
+  }
+
+  setupListeners() {
+    this.socket.on('joinroom', this.onJoinRoom.bind(this));
+    this.socket.on('createquestion', this.onCreateQuestion.bind(this));
+    this.socket.on('optionMark', this.onOptionMark.bind(this));
+    this.socket.on('quizend', this.onQuizEnd.bind(this));
+    this.socket.on('finalscores', this.onFinalScores.bind(this));
+    this.socket.on('disconnecting', this.onDisconnecting.bind(this));
+  }
+
+  onJoinRoom({ roomId, userName }) {
+    this.quizServer.responsesTable[roomId] = {};
+    this.quizServer.idUserMap[this.socket.id] = userName;
+    this.socket.join(roomId);
+    const clientsInRoom = this.getAllClientsInRoom(roomId);
+
+    clientsInRoom.forEach(({ socketId }) => {
+      this.quizServer.io.to(socketId).emit('newusercount', {
+        clientsNumber: clientsInRoom.length - 1,
+      });
+    });
+
+    if (this.quizServer.roomQuestionMap[roomId]) {
+      this.quizServer.io.to(this.socket.id).emit('question', this.quizServer.roomQuestionMap[roomId]);
+    }
+
+    if (this.quizServer.roomTimerMap[roomId]) {
+      this.quizServer.io.to(this.socket.id).emit('timer', this.quizServer.roomTimerMap[roomId]);
+    }
+  }
+
+  onCreateQuestion({ roomId, question, adminName }) {
+    const ques = question.question;
+    this.quizServer.roomQuestionMap[roomId] = ques;
+    this.quizServer.correctAnswer[roomId] = question.correctOption;
+    const clientsInRoom = this.getAllClientsInRoom(roomId);
+
+    clientsInRoom.forEach(({ socketId }) => {
+      if (socketId !== this.socket.id) {
+        this.quizServer.io.to(socketId).emit('question', question);
+      }
+    });
+
+    this.quizServer.roomTimerMap[roomId] = 10;
+
+    const timerInterval = setInterval(() => {
+      this.quizServer.roomTimerMap[roomId]--;
+      if (this.quizServer.roomTimerMap[roomId] > 0) {
+        clientsInRoom.forEach(({ socketId }) => {
+          if (socketId !== this.socket.id) {
+            this.quizServer.io.to(socketId).emit('timer', {
+              time: this.quizServer.roomTimerMap[roomId],
+            });
+          }
+        });
+      } else {
+        clearInterval(timerInterval);
+        this.quizServer.roomQuestionMap[roomId] = null;
+        this.quizServer.roomTimerMap[roomId] = null;
+
+        this.quizServer.io.to(roomId).emit('cumulativeScores', {
+          scores: this.quizServer.responsesTable[roomId],
+        });
+
+        clientsInRoom.forEach(({ socketId }) => {
+          if (socketId !== this.socket.id) {
+            this.quizServer.io.to(socketId).emit('question', {
+              question: null,
+            });
+            this.quizServer.io.to(socketId).emit('timer', {
+              time: null,
+            });
+          }
+        });
+      }
+    }, 1000);
+  }
+
+  onOptionMark({ option, roomId }) {
+    const correctOption = this.quizServer.correctAnswer[roomId];
+    let isCorrect = false;
+
+    if (option == correctOption) {
+      isCorrect = true;
+      this.quizServer.io.to(this.socket.id).emit('answerResult', {
+        result: 'correct',
+      });
+    } else {
+      this.quizServer.io.to(this.socket.id).emit('answerResult', {
+        result: 'wrong',
+      });
+    }
+
+    if (!this.quizServer.responsesTable[roomId][this.quizServer.idUserMap[this.socket.id]]) {
+      this.quizServer.responsesTable[roomId][this.quizServer.idUserMap[this.socket.id]] = isCorrect ? 1 : 0;
+    } else {
+      this.quizServer.responsesTable[roomId][this.quizServer.idUserMap[this.socket.id]] += isCorrect ? 1 : 0;
+    }
+  }
+
+  onQuizEnd({ roomId }) {
+    this.getAllClientsInRoom(roomId).forEach(({ socketId }) => {
+      this.quizServer.io.to(socketId).emit('ended', {
+        ends: true,
+      });
+    });
+  }
+
+  onFinalScores({ roomId }) {
+    this.getAllClientsInRoom(roomId).forEach(({ socketId }) => {
+      this.quizServer.io.to(socketId).emit('scores', {
+        scores: this.quizServer.responsesTable[roomId],
+      });
+    });
+  }
+
+  onDisconnecting() {
+    const rooms = [...this.socket.rooms];
+    rooms.forEach((roomId) => {
+      this.socket.in(roomId).emit('leftroom', {
+        socketId: this.socket.id,
+        userName: this.quizServer.idUserMap[this.socket.id],
+      });
+    });
+    delete this.quizServer.idUserMap[this.socket.id];
+    this.socket.leave();
+  }
+
+  getAllClientsInRoom(roomId) {
+    return Array.from(this.quizServer.io.sockets.adapter.rooms.get(roomId) || []).map((socketId) => {
+      return {
+        socketId,
+        userName: this.quizServer.idUserMap[socketId],
+      };
+    });
+  }
+}
+
+// Usage
+const quizServer = new QuizServer();
+quizServer.startServer(3000);

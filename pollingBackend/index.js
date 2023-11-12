@@ -37,6 +37,8 @@ function clientsExceptAdmin(clientArray, adminName) {
 io.on('connection', (socket) => {
     // Join room event
     socket.on('joinroom', ({ roomId, userName }, err) => {
+
+        responsesTable[roomId] = {};
         idUserMap[socket.id] = userName;
         socket.join(roomId);
         const clientsInRoom = getAllClientsInRoom(roomId);
@@ -44,7 +46,7 @@ io.on('connection', (socket) => {
         // Emit new user join event to every user in the room
         clientsInRoom.forEach(({ socketId }) => {
             io.to(socketId).emit('newusercount', {
-                clientsNumber: clientsInRoom.length,
+                clientsNumber: clientsInRoom.length - 1,
             });
         });
 
@@ -66,7 +68,7 @@ io.on('connection', (socket) => {
         roomQuestionMap[roomId] = ques;
         correctAnswer[roomId] = question.correctOption;
 
-        responsesTable[roomId] = {};
+        // responsesTable[roomId] = {};
 
         // Emit the question to all users in the room
         const clientsInRoom = getAllClientsInRoom(roomId);
@@ -97,7 +99,7 @@ io.on('connection', (socket) => {
                 });
 
                 // Reset user scores for the room
-                responsesTable[roomId] = {};
+                // responsesTable[roomId] = {};
 
                 clientsExceptAdmin(clientsInRoom, adminName).forEach(({ socketId }) => {
                     io.to(socketId).emit('question', {
@@ -113,7 +115,9 @@ io.on('connection', (socket) => {
 
     socket.on('optionMark', ({ option, roomId }) => {
         const correctOption = correctAnswer[roomId];
+
         let isCorrect = false;
+
         if (option == correctOption) {
             isCorrect = true;
             // If the selected option is correct, emit a 'correct' event to the user
@@ -128,17 +132,31 @@ io.on('connection', (socket) => {
         }
 
         if (!responsesTable[roomId][idUserMap[socket.id]]) {
-            responsesTable[roomId][idUserMap[socket.id]] = 0;
+            responsesTable[roomId][idUserMap[socket.id]] = isCorrect ? 1 : 0;
+        }
+        else {
+            responsesTable[roomId][idUserMap[socket.id]] += isCorrect ? 1 : 0;
         }
 
-        responsesTable[roomId][idUserMap[socket.id]] += isCorrect ? 1 : 0;
+        console.log("Changing", responsesTable[roomId][idUserMap[socket.id]])
+
+
     });
 
 
     socket.on('quizend', ({ roomId }) => {
         clientsExceptAdmin(getAllClientsInRoom(roomId)).forEach(({ socketId }) => {
             io.to(socketId).emit("ended", {
-                "ends": true
+                "ends": true,
+            })
+        })
+    })
+
+    socket.on('finalscores', ({ roomId }) => {
+        getAllClientsInRoom(roomId).forEach(({ socketId }) => {
+            console.log(responsesTable[roomId]);
+            io.to(socketId).emit('scores', {
+                "scores": responsesTable[roomId]
             })
         })
     })

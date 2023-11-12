@@ -25,7 +25,7 @@ const App = () => {
             <Route path="/" element={<Home />} />
             {/* Use a ternary operator to conditionally render QuestionPage or PollPage */}
             <Route path='/poll/:roomId' element={<MainPage />} />
-            <Route path="/qended" element={<EndQuiz />} />
+            <Route path="/qended/:roomId" element={<EndQuiz />} />
           </Routes>
         </BrowserRouter>
       </Provider>
