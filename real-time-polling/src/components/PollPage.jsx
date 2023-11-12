@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import socket from '../socket';
 import toast from 'react-hot-toast';
 import { useLocation } from 'react-router-dom';
+import Leaderboard from './LeaderBoard';
 
 const PollPage = ({ userName, roomId }) => {
   const [question, setQuestion] = useState(null);
@@ -71,29 +72,8 @@ const PollPage = ({ userName, roomId }) => {
 
   const renderLeaderboard = () => {
     if (scores) {
-      const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-
       return (
-        <div className="mt-8">
-          <div>Your Score {scores[userName]}</div>
-          <h2 className="text-3xl font-bold mb-4 text-center">Leaderboard</h2>
-          <table className="min-w-full bg-white border border-gray-300 shadow-md">
-            <thead>
-              <tr className="bg-gray-800 text-white">
-                <th className="py-3 px-6 text-center border-b ">Name</th>
-                <th className="py-3 px-6 text-center border-b">Points</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedScores.map(([name, points], index) => (
-                <tr key={index} className={index % 2 === 0 ? 'bg-gray-100' : ''}>
-                  <td className="py-3 px-6 border-b">{name}</td>
-                  <td className="py-3 px-6 border-b">{points}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Leaderboard scores={scores} userName={userName} />
       );
     }
 
@@ -122,13 +102,12 @@ const PollPage = ({ userName, roomId }) => {
                 {question.options.map((option, index) => (
                   <div
                     key={index}
-                    className={`text-lg p-2 ${
-                      selected === index
+                    className={`text-lg p-2 ${selected === index
                         ? isCorrect
                           ? 'bg-green-400'
                           : 'bg-red-400'
                         : 'bg-gray-200'
-                    } w-full rounded-lg cursor-pointer hover:bg-gray-400`}
+                      } w-full rounded-lg cursor-pointer hover:bg-gray-400`}
                     onClick={() => handleOptionSelect(index)}
                   >
                     {option}

@@ -1,5 +1,5 @@
 // Question.js
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   setQuestionDescription,
@@ -11,8 +11,12 @@ import {
   setCorrectOption
 } from './../store/question.js';
 import socket from '../socket.js';
+import Leaderboard from './LeaderBoard.jsx';
+import toast from 'react-hot-toast';
 
 const Question = () => {
+
+  const [scores, setScores] = useState(null);
 
   const roomId = localStorage.getItem('room')
   const dispatch = useDispatch();
@@ -69,7 +73,12 @@ const Question = () => {
     async function socketCode() {
       socket.on('cumulativeScores', ({ scores }) => {
         console.log(scores)
+        dispatch(resetQuestionState());
+        toast.success('Add New Question Now')
+        setScores(scores)
       })
+
+
     }
     socketCode();
     return () => {
@@ -144,6 +153,10 @@ const Question = () => {
 
       <div className='bg-red-400 w-fit text-white flex items-center justify-center p-2 mt-[1rem] cursor-pointer hover:bg-green-500 text-xs' onClick={handleEndPoll}>
         End Quiz
+      </div>
+
+      <div className='mt-[1rem] w-full flex items-center justify-center'>
+        {scores && <Leaderboard userName={null} scores={scores} />}
       </div>
     </section>
   );
