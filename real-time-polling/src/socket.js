@@ -7,6 +7,6 @@ const options = {
     transports: ['websocket'],
 };
 
-const socket = io('http://localhost:3000/', options);
+const socket = io('https://realtime-polling-app.vercel.app/', options);
 
 export default socket;
