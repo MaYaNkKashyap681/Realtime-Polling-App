@@ -2,9 +2,12 @@ const express = require('express');
 const app = express();
 const http = require('http');
 const { Server } = require('socket.io');
+const cors = require('cors')
 
 const server = http.createServer(app);
 const io = new Server(server);
+
+app.use(cors())
 
 // Map to store user information
 const idUserMap = {};
