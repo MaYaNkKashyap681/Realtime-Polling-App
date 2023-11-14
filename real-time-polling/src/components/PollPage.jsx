@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import socket from '../socket';
 import toast from 'react-hot-toast';
 import { useLocation } from 'react-router-dom';
-import Leaderboard from './LeaderBoard';
+
 
 const PollPage = ({ userName, roomId }) => {
   const [question, setQuestion] = useState(null);
