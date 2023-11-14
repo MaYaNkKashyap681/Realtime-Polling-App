@@ -7,6 +7,6 @@ const options = {
     transports: ['websocket'],
 };
 
-const socket = io('https://realtime-polling-app.vercel.app/', options);
+const socket = io('https://polling-service-o08j.onrender.com/', options);
 
 export default socket;
