@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import socket from '../socket';
 import toast from 'react-hot-toast';
-import { useLocation } from 'react-router-dom';
+import LeaderBoard from './LeaderBoard';
 
 
 const PollPage = ({ userName, roomId }) => {
@@ -73,7 +73,7 @@ const PollPage = ({ userName, roomId }) => {
   const renderLeaderboard = () => {
     if (scores) {
       return (
-        <Leaderboard scores={scores} userName={userName} />
+        <LeaderBoard scores={scores} userName={userName} />
       );
     }
 
