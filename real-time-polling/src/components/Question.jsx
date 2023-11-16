@@ -11,7 +11,7 @@ import {
   setCorrectOption
 } from './../store/question.js';
 import socket from '../socket.js';
-import Leaderboard from './LeaderBoard.jsx';
+import LeaderBoard from './LeaderBoard.jsx';
 import toast from 'react-hot-toast';
 
 const Question = () => {
@@ -156,7 +156,7 @@ const Question = () => {
       </div>
 
       <div className='mt-[1rem] w-full flex items-center justify-center'>
-        {scores && <Leaderboard userName={null} scores={scores} />}
+        {scores && <LeaderBoard userName={null} scores={scores} />}
       </div>
     </section>
   );

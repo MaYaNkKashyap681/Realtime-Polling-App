@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Leaderboard = ({ scores, userName }) => {
+const LeaderBoard = ({ scores, userName }) => {
   const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
 
   const downloadJson = () => {
@@ -46,4 +46,4 @@ const Leaderboard = ({ scores, userName }) => {
   );
 };
 
-export default Leaderboard;
+export default LeaderBoard;
