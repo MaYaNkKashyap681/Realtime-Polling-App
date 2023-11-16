@@ -11,7 +11,7 @@ import {
   setCorrectOption
 } from './../store/question.js';
 import socket from '../socket.js';
-import LeaderBoard from './LeaderBoard.jsx';
+
 import toast from 'react-hot-toast';
 
 const Question = () => {
