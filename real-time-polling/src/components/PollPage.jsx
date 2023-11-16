@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import socket from '../socket';
 import toast from 'react-hot-toast';
-import LeaderBoard from './LeaderBoard';
+import LeaderBoard from './LeaderBoard.jsx';
 
 
 const PollPage = ({ userName, roomId }) => {
